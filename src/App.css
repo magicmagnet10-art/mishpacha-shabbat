@@ -199,11 +199,32 @@
   font-style: italic;
 }
 
+/* ── Avatars ── */
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatar-initials {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
 .couple-tag {
   font-size: 0.88rem;
-  padding: 5px 12px;
+  padding: 4px 10px 4px 6px;
   border-radius: 20px;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .tag-other {

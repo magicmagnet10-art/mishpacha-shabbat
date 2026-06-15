@@ -4,13 +4,35 @@ import { supabase, isConfigured } from './supabase'
 import './App.css'
 
 const COUPLES = [
-  'אביה ונריה',
-  'אור ושרון',
-  'רעות וניסים',
-  'חגי ושי',
-  'דידי ותהל',
-  'נהוראי וחן',
+  { name: 'אביה ונריה',  photo: '/photos/aviya-neria.jpg' },
+  { name: 'אור ושרון',   photo: '/photos/or-sharon.jpg' },
+  { name: 'רעות וניסים', photo: '/photos/rut-nisim.jpg' },
+  { name: 'חגי ושי',     photo: '/photos/chagai-shai.jpg' },
+  { name: 'דידי ותהל',   photo: '/photos/didi-tahal.jpg' },
+  { name: 'נהוראי וחן',  photo: '/photos/nahorai-chen.jpg' },
 ]
+
+const COUPLE_COLORS = {
+  'אביה ונריה':  '#7c3aed',
+  'אור ושרון':   '#0ea5e9',
+  'רעות וניסים': '#10b981',
+  'חגי ושי':     '#f59e0b',
+  'דידי ותהל':   '#ef4444',
+  'נהוראי וחן':  '#ec4899',
+}
+
+function Avatar({ name, photo, size = 36 }) {
+  const color = COUPLE_COLORS[name] || '#6b7280'
+  const initial = name.charAt(0)
+  if (photo) {
+    return <img src={photo} alt={name} className="avatar" style={{ width: size, height: size }} />
+  }
+  return (
+    <div className="avatar avatar-initials" style={{ width: size, height: size, background: color }}>
+      {initial}
+    </div>
+  )
+}
 
 const MAX_COUPLES = 2
 const MONTHS_AHEAD = 8
@@ -151,7 +173,7 @@ export default function App() {
         <span className="name-label">מי אתה?</span>
         <select value={selectedCouple} onChange={e => setSelectedCouple(e.target.value)} className="name-select">
           <option value="">— בחר/י שם —</option>
-          {COUPLES.map(c => <option key={c} value={c}>{c}</option>)}
+          {COUPLES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
         </select>
       </div>
 
@@ -192,16 +214,20 @@ export default function App() {
                 {regs.length === 0 ? (
                   <span className="empty-slots">עוד אף אחד לא נרשם</span>
                 ) : (
-                  regs.map(reg => (
-                    <div key={reg.couple_name} className="couple-entry">
-                      <span className={`couple-tag ${reg.couple_name === selectedCouple ? 'tag-mine' : 'tag-other'}`}>
-                        {reg.couple_name === selectedCouple ? '✓ ' : ''}{reg.couple_name}
-                      </span>
-                      {reg.note && (
-                        <p className="couple-note">💬 {reg.note}</p>
-                      )}
-                    </div>
-                  ))
+                  regs.map(reg => {
+                    const couplePhoto = COUPLES.find(c => c.name === reg.couple_name)?.photo || ''
+                    return (
+                      <div key={reg.couple_name} className="couple-entry">
+                        <span className={`couple-tag ${reg.couple_name === selectedCouple ? 'tag-mine' : 'tag-other'}`}>
+                          <Avatar name={reg.couple_name} photo={couplePhoto} size={24} />
+                          {reg.couple_name === selectedCouple ? '✓ ' : ''}{reg.couple_name}
+                        </span>
+                        {reg.note && (
+                          <p className="couple-note">💬 {reg.note}</p>
+                        )}
+                      </div>
+                    )
+                  })
                 )}
               </div>
 
