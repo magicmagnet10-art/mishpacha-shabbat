@@ -65,6 +65,94 @@
   box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
 }
 
+/* ── Custom couple select ── */
+.couple-select {
+  flex: 1;
+  position: relative;
+}
+
+.couple-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #1a1a2e;
+  text-align: right;
+  direction: rtl;
+}
+
+.couple-select-trigger:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+}
+
+.couple-select-placeholder {
+  flex: 1;
+  color: #9ca3af;
+}
+
+.couple-select-trigger > span:not(.couple-select-placeholder):not(.couple-select-arrow) {
+  flex: 1;
+}
+
+.couple-select-arrow {
+  font-size: 0.65rem;
+  color: #9ca3af;
+  margin-right: auto;
+}
+
+.couple-select-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.couple-select-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  direction: rtl;
+  transition: background 0.1s;
+}
+
+.couple-select-item:hover {
+  background: #f3f4f6;
+}
+
+.couple-select-item-active {
+  background: #ede9fe;
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.couple-select-empty {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
 /* ── Error banner ── */
 .error-banner {
   background: #fef3c7;

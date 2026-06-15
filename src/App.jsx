@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { HebrewCalendar, HDate, flags } from '@hebcal/core'
 import { supabase, isConfigured } from './supabase'
 import './App.css'
@@ -30,6 +30,49 @@ function Avatar({ name, photo, size = 36 }) {
   return (
     <div className="avatar avatar-initials" style={{ width: size, height: size, background: color }}>
       {initial}
+    </div>
+  )
+}
+
+function CoupleSelect({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const selected = COUPLES.find(c => c.name === value)
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  return (
+    <div className="couple-select" ref={ref}>
+      <button className="couple-select-trigger" onClick={() => setOpen(o => !o)}>
+        {selected
+          ? <><Avatar name={selected.name} photo={selected.photo} size={30} /><span>{selected.name}</span></>
+          : <span className="couple-select-placeholder">— בחר/י שם —</span>
+        }
+        <span className="couple-select-arrow">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <ul className="couple-select-list">
+          <li className="couple-select-item couple-select-empty" onClick={() => { onChange(''); setOpen(false) }}>
+            — בחר/י שם —
+          </li>
+          {COUPLES.map(c => (
+            <li
+              key={c.name}
+              className={`couple-select-item ${c.name === value ? 'couple-select-item-active' : ''}`}
+              onClick={() => { onChange(c.name); setOpen(false) }}
+            >
+              <Avatar name={c.name} photo={c.photo} size={32} />
+              <span>{c.name}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
@@ -171,10 +214,7 @@ export default function App() {
 
       <div className="name-bar">
         <span className="name-label">מי אתה?</span>
-        <select value={selectedCouple} onChange={e => setSelectedCouple(e.target.value)} className="name-select">
-          <option value="">— בחר/י שם —</option>
-          {COUPLES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-        </select>
+        <CoupleSelect value={selectedCouple} onChange={setSelectedCouple} />
       </div>
 
       {dbError && (
