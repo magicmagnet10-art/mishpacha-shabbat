@@ -264,3 +264,40 @@
   font-style: italic;
   margin-top: 4px;
 }
+
+/* ── Notes ── */
+.couple-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.couple-note {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-style: italic;
+  padding-right: 8px;
+  border-right: 2px solid #d1d5db;
+  margin: 0;
+}
+
+.note-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: none;
+  direction: rtl;
+  color: #374151;
+  background: #f9fafb;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+
+.note-input:focus {
+  outline: none;
+  border-color: #7c3aed;
+  background: white;
+}

@@ -29,14 +29,8 @@ function buildEvents() {
   future.setMonth(future.getMonth() + MONTHS_AHEAD)
 
   const hebEvents = HebrewCalendar.calendar({
-    start: now,
-    end: future,
-    il: true,
-    sedrot: true,
-    noRoshChodesh: true,
-    noModern: true,
-    noSpecialShabbat: true,
-    noMinorFast: true,
+    start: now, end: future, il: true, sedrot: true,
+    noRoshChodesh: true, noModern: true, noSpecialShabbat: true, noMinorFast: true,
   })
 
   const holidayMap = new Map()
@@ -47,21 +41,11 @@ function buildEvents() {
     const greg = e.getDate().greg()
     const d = new Date(greg.getFullYear(), greg.getMonth(), greg.getDate(), 12, 0, 0)
     const dateStr = localDateId(d)
-
     if (mask & flags.CHAG) {
-      if (!holidayMap.has(dateStr)) {
-        holidayMap.set(dateStr, {
-          id: dateStr,
-          date: d,
-          name: e.renderBrief('he'),
-          type: 'chag',
-          hebrewDate: hebrewDate(d),
-        })
-      }
+      if (!holidayMap.has(dateStr))
+        holidayMap.set(dateStr, { id: dateStr, date: d, name: e.renderBrief('he'), type: 'chag', hebrewDate: hebrewDate(d) })
     }
-    if (mask & flags.PARSHA_HASHAVUA) {
-      parashaMap.set(dateStr, e.renderBrief('he'))
-    }
+    if (mask & flags.PARSHA_HASHAVUA) parashaMap.set(dateStr, e.renderBrief('he'))
   }
 
   const events = []
@@ -74,20 +58,12 @@ function buildEvents() {
       events.push({ ...holidayMap.get(dateStr), type: 'chag-shabbat' })
       holidayMap.delete(dateStr)
     } else {
-      events.push({
-        id: dateStr,
-        date: new Date(cursor),
-        name: 'שבת',
-        type: 'shabbat',
-        parasha: parashaMap.get(dateStr),
-        hebrewDate: hebrewDate(new Date(cursor)),
-      })
+      events.push({ id: dateStr, date: new Date(cursor), name: 'שבת', type: 'shabbat', parasha: parashaMap.get(dateStr), hebrewDate: hebrewDate(new Date(cursor)) })
     }
     cursor.setDate(cursor.getDate() + 7)
   }
 
   for (const chag of holidayMap.values()) events.push(chag)
-
   return events.sort((a, b) => a.date - b.date)
 }
 
@@ -96,10 +72,10 @@ function formatDate(date) {
 }
 
 export default function App() {
-  const [selectedCouple, setSelectedCouple] = useState(
-    () => localStorage.getItem('selectedCouple') || ''
-  )
+  const [selectedCouple, setSelectedCouple] = useState(() => localStorage.getItem('selectedCouple') || '')
+  // registrations: { [eventId]: [{couple_name, note}] }
   const [registrations, setRegistrations] = useState({})
+  const [notes, setNotes] = useState({}) // { [eventId]: string } — draft note per event
   const [dbError, setDbError] = useState(false)
 
   const events = useMemo(() => buildEvents(), [])
@@ -110,56 +86,57 @@ export default function App() {
 
   useEffect(() => {
     if (!isConfigured) { setDbError(true); return }
-    supabase
-      .from('registrations')
-      .select('event_id, couple_name')
+
+    supabase.from('registrations').select('event_id, couple_name, note')
       .then(({ data, error }) => {
         if (error) { setDbError(true); return }
         const map = {}
         for (const row of data) {
           if (!map[row.event_id]) map[row.event_id] = []
-          map[row.event_id].push(row.couple_name)
+          map[row.event_id].push({ couple_name: row.couple_name, note: row.note || '' })
         }
         setRegistrations(map)
       })
 
-    if (!isConfigured) return
-    const channel = supabase
-      .channel('registrations-changes')
+    const channel = supabase.channel('registrations-changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations' },
-        ({ new: row }) => {
-          setRegistrations(prev => ({
-            ...prev,
-            [row.event_id]: [...(prev[row.event_id] || []), row.couple_name],
-          }))
-        }
+        ({ new: row }) => setRegistrations(prev => ({
+          ...prev,
+          [row.event_id]: [...(prev[row.event_id] || []), { couple_name: row.couple_name, note: row.note || '' }],
+        }))
       )
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'registrations' },
-        ({ old: row }) => {
-          setRegistrations(prev => ({
-            ...prev,
-            [row.event_id]: (prev[row.event_id] || []).filter(c => c !== row.couple_name),
-          }))
-        }
+        ({ old: row }) => setRegistrations(prev => ({
+          ...prev,
+          [row.event_id]: (prev[row.event_id] || []).filter(r => r.couple_name !== row.couple_name),
+        }))
+      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'registrations' },
+        ({ new: row }) => setRegistrations(prev => ({
+          ...prev,
+          [row.event_id]: (prev[row.event_id] || []).map(r =>
+            r.couple_name === row.couple_name ? { ...r, note: row.note || '' } : r
+          ),
+        }))
       )
       .subscribe()
 
     return () => supabase.removeChannel(channel)
   }, [])
 
-  async function toggleRegistration(eventId) {
+  async function handleRegister(eventId) {
     if (!selectedCouple) return
     const current = registrations[eventId] || []
-    const isRegistered = current.includes(selectedCouple)
+    const isRegistered = current.some(r => r.couple_name === selectedCouple)
 
     if (isRegistered) {
       await supabase.from('registrations')
-        .delete()
-        .eq('event_id', eventId)
-        .eq('couple_name', selectedCouple)
+        .delete().eq('event_id', eventId).eq('couple_name', selectedCouple)
     } else if (current.length < MAX_COUPLES) {
+      const note = notes[eventId] || ''
       await supabase.from('registrations')
-        .insert({ event_id: eventId, couple_name: selectedCouple })
+        .insert({ event_id: eventId, couple_name: selectedCouple, note: note || null })
+      setNotes(prev => ({ ...prev, [eventId]: '' }))
     }
   }
 
@@ -172,35 +149,29 @@ export default function App() {
 
       <div className="name-bar">
         <span className="name-label">מי אתה?</span>
-        <select
-          value={selectedCouple}
-          onChange={(e) => setSelectedCouple(e.target.value)}
-          className="name-select"
-        >
+        <select value={selectedCouple} onChange={e => setSelectedCouple(e.target.value)} className="name-select">
           <option value="">— בחר/י שם —</option>
-          {COUPLES.map((c) => <option key={c} value={c}>{c}</option>)}
+          {COUPLES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
       {dbError && (
         <div className="error-banner">
-          ⚠️ שגיאה בחיבור למסד הנתונים — יש להגדיר את הפרטים בקובץ <code>.env.local</code>
+          ⚠️ שגיאה בחיבור למסד הנתונים
         </div>
       )}
 
       <main className="events">
-        {events.map((event) => {
+        {events.map(event => {
           const regs = registrations[event.id] || []
-          const isRegistered = !!(selectedCouple && regs.includes(selectedCouple))
+          const myReg = regs.find(r => r.couple_name === selectedCouple)
+          const isRegistered = !!myReg
           const isFull = regs.length >= MAX_COUPLES
           const spotsLeft = MAX_COUPLES - regs.length
           const isChag = event.type === 'chag' || event.type === 'chag-shabbat'
 
           return (
-            <div
-              key={event.id}
-              className={`card ${isChag ? 'card-chag' : 'card-shabbat'} ${isFull && !isRegistered ? 'card-full' : ''} ${isRegistered ? 'card-mine' : ''}`}
-            >
+            <div key={event.id} className={`card ${isChag ? 'card-chag' : 'card-shabbat'} ${isFull && !isRegistered ? 'card-full' : ''} ${isRegistered ? 'card-mine' : ''}`}>
               <div className="card-header">
                 <div className="card-title">
                   <span className="event-icon">{isChag ? '✨' : '🕯️'}</span>
@@ -221,21 +192,33 @@ export default function App() {
                 {regs.length === 0 ? (
                   <span className="empty-slots">עוד אף אחד לא נרשם</span>
                 ) : (
-                  regs.map((couple) => (
-                    <span
-                      key={couple}
-                      className={`couple-tag ${couple === selectedCouple ? 'tag-mine' : 'tag-other'}`}
-                    >
-                      {couple === selectedCouple ? '✓ ' : ''}{couple}
-                    </span>
+                  regs.map(reg => (
+                    <div key={reg.couple_name} className="couple-entry">
+                      <span className={`couple-tag ${reg.couple_name === selectedCouple ? 'tag-mine' : 'tag-other'}`}>
+                        {reg.couple_name === selectedCouple ? '✓ ' : ''}{reg.couple_name}
+                      </span>
+                      {reg.note && (
+                        <p className="couple-note">💬 {reg.note}</p>
+                      )}
+                    </div>
                   ))
                 )}
               </div>
 
+              {selectedCouple && !isRegistered && !isFull && (
+                <textarea
+                  className="note-input"
+                  placeholder="בקשה מיוחדת — עיצוב חדר, אוכל אהוב... (אופציונלי)"
+                  rows={2}
+                  value={notes[event.id] || ''}
+                  onChange={e => setNotes(prev => ({ ...prev, [event.id]: e.target.value }))}
+                />
+              )}
+
               {selectedCouple ? (
                 <button
                   className={`btn ${isRegistered ? 'btn-cancel' : isFull ? 'btn-full' : 'btn-join'}`}
-                  onClick={() => toggleRegistration(event.id)}
+                  onClick={() => handleRegister(event.id)}
                   disabled={isFull && !isRegistered}
                 >
                   {isRegistered ? '❌ ביטול' : isFull ? 'מלא' : '✅ אני בא!'}
