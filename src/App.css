@@ -1,0 +1,266 @@
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+/* ── Header ── */
+.header {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  text-align: center;
+  padding: 28px 20px 24px;
+}
+
+.header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: white;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+/* ── Name selector ── */
+.name-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.name-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  color: #374151;
+}
+
+.name-select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #1a1a2e;
+  background: white;
+  cursor: pointer;
+  appearance: auto;
+  direction: rtl;
+}
+
+.name-select:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+}
+
+/* ── Error banner ── */
+.error-banner {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.error-banner code {
+  background: rgba(0,0,0,0.08);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* ── Events list ── */
+.events {
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px 0;
+  font-size: 1.1rem;
+  color: #6b7280;
+}
+
+/* ── Card ── */
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border-right: 5px solid #c7d2fe;
+  transition: box-shadow 0.2s;
+}
+
+.card-shabbat {
+  border-right-color: #6366f1;
+}
+
+.card-chag, .card-chag-shabbat {
+  border-right-color: #f59e0b;
+}
+
+.card-full {
+  opacity: 0.75;
+}
+
+.card-mine {
+  border-right-color: #10b981;
+  background: #f0fdf4;
+}
+
+/* ── Card header ── */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-icon {
+  font-size: 1.3rem;
+}
+
+.event-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.event-date {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 2px;
+}
+
+.event-hebrew {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin-bottom: 12px;
+}
+
+.parasha {
+  color: #7c3aed;
+  font-weight: 500;
+}
+
+/* ── Badge ── */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.badge-open {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-full {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ── Registrations ── */
+.registrations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  min-height: 34px;
+  align-items: center;
+}
+
+.empty-slots {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.couple-tag {
+  font-size: 0.88rem;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.tag-other {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.tag-mine {
+  background: #10b981;
+  color: white;
+}
+
+/* ── Buttons ── */
+.btn {
+  width: 100%;
+  padding: 11px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-join {
+  background: #4f46e5;
+  color: white;
+}
+
+.btn-join:hover {
+  opacity: 0.9;
+}
+
+.btn-cancel {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.btn-cancel:hover {
+  background: #fecaca;
+}
+
+.btn-full {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.hint {
+  text-align: center;
+  font-size: 0.82rem;
+  color: #9ca3af;
+  font-style: italic;
+  margin-top: 4px;
+}
