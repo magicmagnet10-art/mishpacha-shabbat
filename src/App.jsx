@@ -294,7 +294,9 @@ export default function App() {
   const [blockedDates,       setBlockedDates]       = useState(new Set())
   const [notes,              setNotes]              = useState({})
   const [dbError,            setDbError]            = useState(false)
-  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [showChangePassword,  setShowChangePassword]  = useState(false)
+  const [notifStatus,         setNotifStatus]         = useState(() => typeof Notification !== 'undefined' ? Notification.permission : 'unsupported')
+  const [notifTest,           setNotifTest]           = useState('')  // '', 'sending', 'ok', 'error'
 
   const events  = useMemo(() => buildEvents(), [])
   const isAdmin = currentUser?.role === 'admin'
@@ -405,6 +407,44 @@ export default function App() {
     }
   }
 
+  async function handleEnableNotifications() {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js')
+      await navigator.serviceWorker.ready
+      const permission = await Notification.requestPermission()
+      setNotifStatus(permission)
+      if (permission !== 'granted') return
+
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+      })
+      await supabase.from('push_subscriptions').upsert(
+        { couple_name: currentUser.couple_name, role: currentUser.role, subscription: sub.toJSON() },
+        { onConflict: 'couple_name' }
+      )
+      setNotifStatus('granted')
+    } catch (e) {
+      console.warn('Push enable:', e)
+      setNotifStatus('error')
+    }
+  }
+
+  async function handleTestNotification() {
+    setNotifTest('sending')
+    try {
+      const res = await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ record: { couple_name: 'בדיקה', event_id: 'test' } }),
+      })
+      setNotifTest(res.ok ? 'ok' : 'error')
+    } catch {
+      setNotifTest('error')
+    }
+    setTimeout(() => setNotifTest(''), 4000)
+  }
+
   async function handleApprove(eventId, coupleName) {
     await supabase.from('registrations')
       .update({ status: 'approved' })
@@ -453,6 +493,25 @@ export default function App() {
 
       {showChangePassword && (
         <ChangePasswordModal currentUser={currentUser} onClose={() => setShowChangePassword(false)} />
+      )}
+
+      {isAdmin && (
+        <div className="admin-notif-bar">
+          <span className="notif-status-label">
+            {notifStatus === 'granted'     ? '🔔 התראות פעילות' :
+             notifStatus === 'denied'      ? '🔕 התראות חסומות בדפדפן' :
+             notifStatus === 'unsupported' ? '⚠️ דפדפן לא תומך' :
+                                            '🔕 התראות לא הופעלו'}
+          </span>
+          {notifStatus !== 'granted' && notifStatus !== 'denied' && notifStatus !== 'unsupported' && (
+            <button className="notif-enable-btn" onClick={handleEnableNotifications}>הפעל התראות</button>
+          )}
+          {notifStatus === 'granted' && (
+            <button className="notif-test-btn" onClick={handleTestNotification} disabled={notifTest === 'sending'}>
+              {notifTest === 'sending' ? '...' : notifTest === 'ok' ? '✅ נשלח!' : notifTest === 'error' ? '❌ שגיאה' : 'שלח בדיקה'}
+            </button>
+          )}
+        </div>
       )}
 
       {isAdmin && pendingCount > 0 && (

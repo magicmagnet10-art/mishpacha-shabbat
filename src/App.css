@@ -184,6 +184,55 @@
 
 .logout-btn:hover { background: #f3f4f6; }
 
+/* ── Admin notification bar ── */
+.admin-notif-bar {
+  background: #f0f9ff;
+  border-bottom: 1px solid #bae6fd;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  direction: rtl;
+}
+
+.notif-status-label {
+  flex: 1;
+  color: #374151;
+  font-weight: 500;
+}
+
+.notif-enable-btn {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.notif-enable-btn:hover { opacity: 0.9; }
+
+.notif-test-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.notif-test-btn:hover { background: #e5e7eb; }
+.notif-test-btn:disabled { opacity: 0.6; cursor: default; }
+
 /* ── Pending banner (admin) ── */
 .pending-banner {
   background: #fef3c7;
