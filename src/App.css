@@ -24,8 +24,179 @@
   opacity: 0.85;
 }
 
-/* ── Name selector ── */
+/* ── Login screen ── */
+.login-screen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px 60px;
+}
+
+.login-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 32px;
+}
+
+.login-logo { font-size: 3rem; margin-bottom: 8px; }
+
+.login-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.login-header p { opacity: 0.85; font-size: 1rem; }
+
+.login-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-couple-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 16px;
+  padding: 18px 8px 14px;
+  cursor: pointer;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.login-couple-btn:hover {
+  background: rgba(255,255,255,0.28);
+  transform: scale(1.04);
+}
+
+.login-card {
+  background: white;
+  border-radius: 20px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+.back-btn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: #4f46e5;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+  padding: 0;
+}
+
+.login-card h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.password-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-family: inherit;
+  text-align: center;
+  letter-spacing: 3px;
+  box-sizing: border-box;
+}
+
+.password-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+}
+
+.login-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.login-btn { width: 100%; }
+
+/* ── Name bar (logged-in state) ── */
 .name-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.name-bar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.admin-badge {
+  background: #4f46e5;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.logout-btn {
+  background: none;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  color: #6b7280;
+  transition: background 0.1s;
+  white-space: nowrap;
+}
+
+.logout-btn:hover { background: #f3f4f6; }
+
+/* ── Pending banner (admin) ── */
+.pending-banner {
+  background: #fef3c7;
+  border-bottom: 2px solid #f59e0b;
+  color: #92400e;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* ── Name selector (old, kept for reference) ── */
+.name-bar-legacy {
   position: sticky;
   top: 0;
   z-index: 10;
@@ -212,12 +383,26 @@
   background: #f0fdf4;
 }
 
+.card-blocked {
+  opacity: 0.65;
+  border-right-color: #9ca3af !important;
+  background: #f9fafb;
+}
+
 /* ── Card header ── */
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 4px;
+  gap: 6px;
+}
+
+.card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .card-title {
@@ -409,4 +594,164 @@
   outline: none;
   border-color: #7c3aed;
   background: white;
+}
+
+/* ── Pending button ── */
+.btn-pending {
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.88rem;
+}
+
+.btn-pending:hover { background: #fde68a; }
+
+/* ── Pending tag ── */
+.tag-pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px dashed #f59e0b;
+}
+
+/* ── Blocked badge & message ── */
+.badge-blocked {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.blocked-message {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  font-style: italic;
+  margin-top: 8px;
+}
+
+/* ── Admin block button ── */
+.block-btn {
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.block-btn:hover { background: #f3f4f6; }
+
+.block-btn-active {
+  background: #d1fae5;
+  border-color: #10b981;
+  color: #065f46;
+}
+
+/* ── Admin approve/reject buttons ── */
+.admin-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  padding-right: 4px;
+}
+
+.approve-btn, .reject-btn {
+  font-size: 0.78rem;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  transition: opacity 0.1s;
+}
+
+.approve-btn { background: #d1fae5; color: #065f46; }
+.approve-btn:hover { opacity: 0.8; }
+
+.reject-btn { background: #fee2e2; color: #991b1b; }
+.reject-btn:hover { opacity: 0.8; }
+
+/* ── Change password button ── */
+.change-pass-btn {
+  background: none;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.1s;
+}
+.change-pass-btn:hover { background: #f3f4f6; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-card {
+  background: white;
+  border-radius: 20px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 340px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-form label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: -4px;
+}
+
+.modal-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  font-size: 1rem;
+  color: #065f46;
+  font-weight: 600;
 }

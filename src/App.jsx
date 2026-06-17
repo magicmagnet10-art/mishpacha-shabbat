@@ -3,6 +3,7 @@ import { HebrewCalendar, HDate, flags } from '@hebcal/core'
 import { supabase, isConfigured } from './supabase'
 import './App.css'
 
+// ── Constants ──────────────────────────────────────────────
 const COUPLES = [
   { name: 'אביה ונריה',  photo: '/photos/aviya-neria.jpg' },
   { name: 'אור ושרון',   photo: '/photos/or-sharon.jpg' },
@@ -19,10 +20,15 @@ const COUPLE_COLORS = {
   'חגי ושי':     '#f59e0b',
   'דידי ותהל':   '#ef4444',
   'נהוראי וחן':  '#ec4899',
+  'אבא':         '#4f46e5',
 }
 
+const MAX_COUPLES  = 2
+const MONTHS_AHEAD = 8
+
+// ── Avatar ─────────────────────────────────────────────────
 function Avatar({ name, photo, size = 36 }) {
-  const color = COUPLE_COLORS[name] || '#6b7280'
+  const color   = COUPLE_COLORS[name] || '#6b7280'
   const initial = name.charAt(0)
   if (photo) {
     return <img src={photo} alt={name} className="avatar" style={{ width: size, height: size }} />
@@ -34,62 +40,14 @@ function Avatar({ name, photo, size = 36 }) {
   )
 }
 
-function CoupleSelect({ value, onChange }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-  const selected = COUPLES.find(c => c.name === value)
-
-  useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
-  return (
-    <div className="couple-select" ref={ref}>
-      <button className="couple-select-trigger" onClick={() => setOpen(o => !o)}>
-        {selected
-          ? <><Avatar name={selected.name} photo={selected.photo} size={30} /><span>{selected.name}</span></>
-          : <span className="couple-select-placeholder">— בחר/י שם —</span>
-        }
-        <span className="couple-select-arrow">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <ul className="couple-select-list">
-          <li className="couple-select-item couple-select-empty" onClick={() => { onChange(''); setOpen(false) }}>
-            — בחר/י שם —
-          </li>
-          {COUPLES.map(c => (
-            <li
-              key={c.name}
-              className={`couple-select-item ${c.name === value ? 'couple-select-item-active' : ''}`}
-              onClick={() => { onChange(c.name); setOpen(false) }}
-            >
-              <Avatar name={c.name} photo={c.photo} size={32} />
-              <span>{c.name}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
-const MAX_COUPLES = 2
-const MONTHS_AHEAD = 8
-
+// ── Date helpers ───────────────────────────────────────────
 function localDateId(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
-
-function hebrewDate(date) {
-  return new HDate(date).render('he')
-}
+function hebrewDate(date) { return new HDate(date).render('he') }
 
 function buildEvents() {
-  const now = new Date()
+  const now    = new Date()
   const future = new Date()
   future.setMonth(future.getMonth() + MONTHS_AHEAD)
 
@@ -104,7 +62,7 @@ function buildEvents() {
   for (const e of hebEvents) {
     const mask = e.getFlags()
     const greg = e.getDate().greg()
-    const d = new Date(greg.getFullYear(), greg.getMonth(), greg.getDate(), 12, 0, 0)
+    const d    = new Date(greg.getFullYear(), greg.getMonth(), greg.getDate(), 12, 0, 0)
     const dateStr = localDateId(d)
     if (mask & flags.CHAG) {
       if (!holidayMap.has(dateStr))
@@ -123,7 +81,8 @@ function buildEvents() {
       events.push({ ...holidayMap.get(dateStr), type: 'chag-shabbat' })
       holidayMap.delete(dateStr)
     } else {
-      events.push({ id: dateStr, date: new Date(cursor), name: 'שבת', type: 'shabbat', parasha: parashaMap.get(dateStr), hebrewDate: hebrewDate(new Date(cursor)) })
+      events.push({ id: dateStr, date: new Date(cursor), name: 'שבת', type: 'shabbat',
+        parasha: parashaMap.get(dateStr), hebrewDate: hebrewDate(new Date(cursor)) })
     }
     cursor.setDate(cursor.getDate() + 7)
   }
@@ -136,38 +95,214 @@ function formatDate(date) {
   return date.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
+// ── Login Screen ───────────────────────────────────────────
+const ALL_USERS = [...COUPLES, { name: 'אבא', photo: '' }]
+
+function LoginScreen({ onLogin }) {
+  const [step,     setStep]     = useState('select')
+  const [selected, setSelected] = useState(null)
+  const [password, setPassword] = useState('')
+  const [error,    setError]    = useState('')
+  const [loading,  setLoading]  = useState(false)
+
+  function pickUser(user) {
+    setSelected(user)
+    setStep('password')
+    setPassword('')
+    setError('')
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault()
+    if (!password) return setError('הכנס/י סיסמה')
+    setLoading(true)
+    setError('')
+
+    const { data } = await supabase
+      .from('app_users')
+      .select('couple_name, role')
+      .eq('couple_name', selected.name)
+      .eq('password', password)
+      .maybeSingle()
+
+    setLoading(false)
+    if (!data) return setError('סיסמה שגויה')
+    onLogin({ couple_name: data.couple_name, role: data.role })
+  }
+
+  if (step === 'select') {
+    return (
+      <div className="login-screen" dir="rtl">
+        <div className="login-header">
+          <div className="login-logo">🏠</div>
+          <h1>ביקורים אצל אמא ואבא</h1>
+          <p>בחר/י את הזוג שלך</p>
+        </div>
+        <div className="login-grid">
+          {ALL_USERS.map(user => (
+            <button key={user.name} className="login-couple-btn" onClick={() => pickUser(user)}>
+              <Avatar name={user.name} photo={user.photo} size={60} />
+              <span>{user.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="login-screen" dir="rtl">
+      <div className="login-card">
+        <button className="back-btn" onClick={() => setStep('select')}>→ חזור</button>
+        <Avatar name={selected.name} photo={selected.photo} size={80} />
+        <h2>{selected.name}</h2>
+        <form onSubmit={handleLogin}>
+          <input
+            type="password"
+            placeholder="סיסמה"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="password-input"
+            autoFocus
+            dir="ltr"
+          />
+          {error && <p className="login-error">{error}</p>}
+          <button type="submit" disabled={loading} className="btn btn-join login-btn">
+            {loading ? '...' : 'כניסה'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Change Password Modal ──────────────────────────────────
+function ChangePasswordModal({ currentUser, onClose }) {
+  const [current,  setCurrent]  = useState('')
+  const [next,     setNext]     = useState('')
+  const [confirm,  setConfirm]  = useState('')
+  const [error,    setError]    = useState('')
+  const [success,  setSuccess]  = useState(false)
+  const [loading,  setLoading]  = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+    if (next.length < 4)       return setError('הסיסמה חייבת להכיל לפחות 4 תווים')
+    if (next !== confirm)      return setError('הסיסמאות לא תואמות')
+
+    setLoading(true)
+
+    // verify current password
+    const { data } = await supabase
+      .from('app_users')
+      .select('couple_name')
+      .eq('couple_name', currentUser.couple_name)
+      .eq('password', current)
+      .maybeSingle()
+
+    if (!data) {
+      setLoading(false)
+      return setError('הסיסמה הנוכחית שגויה')
+    }
+
+    const { error: updateError } = await supabase
+      .from('app_users')
+      .update({ password: next })
+      .eq('couple_name', currentUser.couple_name)
+
+    setLoading(false)
+    if (updateError) return setError('שגיאה בשמירה, נסה שוב')
+    setSuccess(true)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-card" dir="rtl">
+        <div className="modal-header">
+          <h2>🔑 שינוי סיסמה</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        {success ? (
+          <div className="modal-success">
+            <p>✅ הסיסמה שונתה בהצלחה!</p>
+            <button className="btn btn-join" onClick={onClose}>סגור</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="modal-form">
+            <label>סיסמה נוכחית</label>
+            <input type="password" value={current}  onChange={e => setCurrent(e.target.value)}
+              className="password-input" dir="ltr" autoFocus />
+
+            <label>סיסמה חדשה</label>
+            <input type="password" value={next}     onChange={e => setNext(e.target.value)}
+              className="password-input" dir="ltr" />
+
+            <label>אימות סיסמה חדשה</label>
+            <input type="password" value={confirm}  onChange={e => setConfirm(e.target.value)}
+              className="password-input" dir="ltr" />
+
+            {error && <p className="login-error">{error}</p>}
+            <button type="submit" disabled={loading} className="btn btn-join">
+              {loading ? '...' : 'שמור סיסמה'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Main App ───────────────────────────────────────────────
 export default function App() {
-  const [selectedCouple, setSelectedCouple] = useState(() => localStorage.getItem('selectedCouple') || '')
-  // registrations: { [eventId]: [{couple_name, note}] }
-  const [registrations, setRegistrations] = useState({})
-  const [notes, setNotes] = useState({}) // { [eventId]: string } — draft note per event
-  const [dbError, setDbError] = useState(false)
+  const [currentUser,  setCurrentUser]  = useState(() => {
+    try { return JSON.parse(localStorage.getItem('currentUser')) } catch { return null }
+  })
+  const [registrations,      setRegistrations]      = useState({})
+  const [blockedDates,       setBlockedDates]       = useState(new Set())
+  const [notes,              setNotes]              = useState({})
+  const [dbError,            setDbError]            = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
-  const events = useMemo(() => buildEvents(), [])
+  const events  = useMemo(() => buildEvents(), [])
+  const isAdmin = currentUser?.role === 'admin'
 
-  useEffect(() => {
-    if (selectedCouple) localStorage.setItem('selectedCouple', selectedCouple)
-  }, [selectedCouple])
+  function handleLogin(user) {
+    setCurrentUser(user)
+    localStorage.setItem('currentUser', JSON.stringify(user))
+  }
 
+  function handleLogout() {
+    setCurrentUser(null)
+    localStorage.removeItem('currentUser')
+  }
+
+  // ── Load data + realtime ──
   useEffect(() => {
     if (!isConfigured) { setDbError(true); return }
 
-    supabase.from('registrations').select('event_id, couple_name, note')
+    supabase.from('registrations').select('event_id, couple_name, note, status')
       .then(({ data, error }) => {
         if (error) { setDbError(true); return }
         const map = {}
-        for (const row of data) {
+        for (const row of (data || [])) {
           if (!map[row.event_id]) map[row.event_id] = []
-          map[row.event_id].push({ couple_name: row.couple_name, note: row.note || '' })
+          map[row.event_id].push({ couple_name: row.couple_name, note: row.note || '', status: row.status || 'approved' })
         }
         setRegistrations(map)
       })
 
-    const channel = supabase.channel('registrations-changes')
+    supabase.from('blocked_dates').select('date_id')
+      .then(({ data }) => {
+        if (data) setBlockedDates(new Set(data.map(d => d.date_id)))
+      })
+
+    const regChannel = supabase.channel('registrations-changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations' },
         ({ new: row }) => setRegistrations(prev => ({
           ...prev,
-          [row.event_id]: [...(prev[row.event_id] || []), { couple_name: row.couple_name, note: row.note || '' }],
+          [row.event_id]: [...(prev[row.event_id] || []), { couple_name: row.couple_name, note: row.note || '', status: row.status || 'pending' }],
         }))
       )
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'registrations' },
@@ -180,30 +315,70 @@ export default function App() {
         ({ new: row }) => setRegistrations(prev => ({
           ...prev,
           [row.event_id]: (prev[row.event_id] || []).map(r =>
-            r.couple_name === row.couple_name ? { ...r, note: row.note || '' } : r
+            r.couple_name === row.couple_name ? { ...r, note: row.note || '', status: row.status } : r
           ),
         }))
       )
       .subscribe()
 
-    return () => supabase.removeChannel(channel)
+    const blockedChannel = supabase.channel('blocked-dates-changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'blocked_dates' },
+        ({ new: row }) => setBlockedDates(prev => new Set([...prev, row.date_id]))
+      )
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'blocked_dates' },
+        ({ old: row }) => setBlockedDates(prev => { const s = new Set(prev); s.delete(row.date_id); return s })
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(regChannel)
+      supabase.removeChannel(blockedChannel)
+    }
   }, [])
 
+  // ── Actions ──
   async function handleRegister(eventId) {
-    if (!selectedCouple) return
+    if (!currentUser || isAdmin) return
     const current = registrations[eventId] || []
-    const isRegistered = current.some(r => r.couple_name === selectedCouple)
+    const myReg   = current.find(r => r.couple_name === currentUser.couple_name)
 
-    if (isRegistered) {
+    if (myReg) {
       await supabase.from('registrations')
-        .delete().eq('event_id', eventId).eq('couple_name', selectedCouple)
-    } else if (current.length < MAX_COUPLES) {
+        .delete().eq('event_id', eventId).eq('couple_name', currentUser.couple_name)
+    } else {
+      const approvedCount = current.filter(r => r.status === 'approved').length
+      if (approvedCount >= MAX_COUPLES) return
       const note = notes[eventId] || ''
       await supabase.from('registrations')
-        .insert({ event_id: eventId, couple_name: selectedCouple, note: note || null })
+        .insert({ event_id: eventId, couple_name: currentUser.couple_name, note: note || null, status: 'pending' })
       setNotes(prev => ({ ...prev, [eventId]: '' }))
     }
   }
+
+  async function handleApprove(eventId, coupleName) {
+    await supabase.from('registrations')
+      .update({ status: 'approved' })
+      .eq('event_id', eventId).eq('couple_name', coupleName)
+  }
+
+  async function handleReject(eventId, coupleName) {
+    await supabase.from('registrations')
+      .delete()
+      .eq('event_id', eventId).eq('couple_name', coupleName)
+  }
+
+  async function handleBlockDate(dateId) {
+    if (blockedDates.has(dateId)) {
+      await supabase.from('blocked_dates').delete().eq('date_id', dateId)
+    } else {
+      await supabase.from('blocked_dates').insert({ date_id: dateId })
+    }
+  }
+
+  const pendingCount = Object.values(registrations).flat().filter(r => r.status === 'pending').length
+
+  // ── Render ──
+  if (!currentUser) return <LoginScreen onLogin={handleLogin} />
 
   return (
     <div className="app" dir="rtl">
@@ -213,35 +388,76 @@ export default function App() {
       </header>
 
       <div className="name-bar">
-        <span className="name-label">מי אתה?</span>
-        <CoupleSelect value={selectedCouple} onChange={setSelectedCouple} />
+        <div className="name-bar-user">
+          <Avatar
+            name={currentUser.couple_name}
+            photo={COUPLES.find(c => c.name === currentUser.couple_name)?.photo || ''}
+            size={32}
+          />
+          <span className="name-label">{currentUser.couple_name}</span>
+          {isAdmin && <span className="admin-badge">מנהל</span>}
+        </div>
+        <button className="change-pass-btn" onClick={() => setShowChangePassword(true)} title="שינוי סיסמה">🔑</button>
+        <button className="logout-btn" onClick={handleLogout}>יציאה</button>
       </div>
 
-      {dbError && (
-        <div className="error-banner">
-          ⚠️ שגיאה בחיבור למסד הנתונים
+      {showChangePassword && (
+        <ChangePasswordModal currentUser={currentUser} onClose={() => setShowChangePassword(false)} />
+      )}
+
+      {isAdmin && pendingCount > 0 && (
+        <div className="pending-banner">
+          ⏳ {pendingCount} בקש{pendingCount === 1 ? 'ה' : 'ות'} ממתינ{pendingCount === 1 ? 'ת' : 'ות'} לאישור
         </div>
+      )}
+
+      {dbError && (
+        <div className="error-banner">⚠️ שגיאה בחיבור למסד הנתונים</div>
       )}
 
       <main className="events">
         {events.map(event => {
-          const regs = registrations[event.id] || []
-          const myReg = regs.find(r => r.couple_name === selectedCouple)
-          const isRegistered = !!myReg
-          const isFull = regs.length >= MAX_COUPLES
-          const spotsLeft = MAX_COUPLES - regs.length
-          const isChag = event.type === 'chag' || event.type === 'chag-shabbat'
+          const regs        = registrations[event.id] || []
+          const approvedRegs = regs.filter(r => r.status === 'approved')
+          const pendingRegs  = regs.filter(r => r.status === 'pending')
+          const myReg        = regs.find(r => r.couple_name === currentUser.couple_name)
+          const isBlocked    = blockedDates.has(event.id)
+          const isChag       = event.type === 'chag' || event.type === 'chag-shabbat'
+          const isFull       = approvedRegs.length >= MAX_COUPLES
+          const spotsLeft    = MAX_COUPLES - approvedRegs.length
+
+          // pending regs visible to couple: only their own; to admin: all
+          const visiblePending = isAdmin ? pendingRegs : pendingRegs.filter(r => r.couple_name === currentUser.couple_name)
 
           return (
-            <div key={event.id} className={`card ${isChag ? 'card-chag' : 'card-shabbat'} ${isFull && !isRegistered ? 'card-full' : ''} ${isRegistered ? 'card-mine' : ''}`}>
+            <div key={event.id} className={[
+              'card',
+              isChag ? 'card-chag' : 'card-shabbat',
+              isBlocked ? 'card-blocked' : '',
+              myReg?.status === 'approved' ? 'card-mine' : '',
+            ].join(' ')}>
+
               <div className="card-header">
                 <div className="card-title">
-                  <span className="event-icon">{isChag ? '✨' : '🕯️'}</span>
+                  <span className="event-icon">{isChag ? '✨' : isBlocked ? '🚫' : '🕯️'}</span>
                   <span className="event-name">{event.name}</span>
                 </div>
-                <span className={`badge ${isFull ? 'badge-full' : 'badge-open'}`}>
-                  {isFull ? 'מלא' : `${spotsLeft} מקומות פנויים`}
-                </span>
+                <div className="card-header-right">
+                  {isBlocked
+                    ? <span className="badge badge-blocked">לא פנוי</span>
+                    : <span className={`badge ${isFull ? 'badge-full' : 'badge-open'}`}>
+                        {isFull ? 'מלא' : `${spotsLeft} מקומות פנויים`}
+                      </span>
+                  }
+                  {isAdmin && (
+                    <button
+                      className={`block-btn ${isBlocked ? 'block-btn-active' : ''}`}
+                      onClick={() => handleBlockDate(event.id)}
+                    >
+                      {isBlocked ? '✅ פתח' : '🚫 חסום'}
+                    </button>
+                  )}
+                </div>
               </div>
 
               <p className="event-date">{formatDate(event.date)}</p>
@@ -251,46 +467,76 @@ export default function App() {
               </p>
 
               <div className="registrations">
-                {regs.length === 0 ? (
+                {approvedRegs.length === 0 && visiblePending.length === 0 ? (
                   <span className="empty-slots">עוד אף אחד לא נרשם</span>
                 ) : (
-                  regs.map(reg => {
-                    const couplePhoto = COUPLES.find(c => c.name === reg.couple_name)?.photo || ''
-                    return (
-                      <div key={reg.couple_name} className="couple-entry">
-                        <span className={`couple-tag ${reg.couple_name === selectedCouple ? 'tag-mine' : 'tag-other'}`}>
-                          <Avatar name={reg.couple_name} photo={couplePhoto} size={24} />
-                          {reg.couple_name === selectedCouple ? '✓ ' : ''}{reg.couple_name}
-                        </span>
-                        {reg.note && (
-                          <p className="couple-note">💬 {reg.note}</p>
-                        )}
-                      </div>
-                    )
-                  })
+                  <>
+                    {approvedRegs.map(reg => {
+                      const photo = COUPLES.find(c => c.name === reg.couple_name)?.photo || ''
+                      return (
+                        <div key={reg.couple_name} className="couple-entry">
+                          <span className={`couple-tag ${reg.couple_name === currentUser.couple_name ? 'tag-mine' : 'tag-other'}`}>
+                            <Avatar name={reg.couple_name} photo={photo} size={24} />
+                            {reg.couple_name === currentUser.couple_name ? '✓ ' : ''}{reg.couple_name}
+                          </span>
+                          {reg.note && <p className="couple-note">💬 {reg.note}</p>}
+                        </div>
+                      )
+                    })}
+
+                    {visiblePending.map(reg => {
+                      const photo = COUPLES.find(c => c.name === reg.couple_name)?.photo || ''
+                      return (
+                        <div key={reg.couple_name} className="couple-entry">
+                          <span className="couple-tag tag-pending">
+                            <Avatar name={reg.couple_name} photo={photo} size={24} />
+                            ⏳ {reg.couple_name}
+                          </span>
+                          {reg.note && <p className="couple-note">💬 {reg.note}</p>}
+                          {isAdmin && (
+                            <div className="admin-actions">
+                              <button className="approve-btn" onClick={() => handleApprove(event.id, reg.couple_name)}>✅ אשר</button>
+                              <button className="reject-btn"  onClick={() => handleReject(event.id, reg.couple_name)}>❌ דחה</button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </>
                 )}
               </div>
 
-              {selectedCouple && !isRegistered && !isFull && (
-                <textarea
-                  className="note-input"
-                  placeholder="בקשה מיוחדת — עיצוב חדר, אוכל אהוב... (אופציונלי)"
-                  rows={2}
-                  value={notes[event.id] || ''}
-                  onChange={e => setNotes(prev => ({ ...prev, [event.id]: e.target.value }))}
-                />
+              {/* Register area — couples only */}
+              {!isAdmin && !isBlocked && (
+                <>
+                  {!myReg && !isFull && (
+                    <textarea
+                      className="note-input"
+                      placeholder="בקשה מיוחדת — עיצוב חדר, אוכל אהוב... (אופציונלי)"
+                      rows={2}
+                      value={notes[event.id] || ''}
+                      onChange={e => setNotes(prev => ({ ...prev, [event.id]: e.target.value }))}
+                    />
+                  )}
+                  <button
+                    className={`btn ${
+                      myReg
+                        ? myReg.status === 'pending' ? 'btn-pending' : 'btn-cancel'
+                        : isFull ? 'btn-full' : 'btn-join'
+                    }`}
+                    onClick={() => handleRegister(event.id)}
+                    disabled={isFull && !myReg}
+                  >
+                    {myReg
+                      ? myReg.status === 'pending' ? '⏳ ממתין לאישור — לחץ לביטול' : '❌ ביטול'
+                      : isFull ? 'מלא' : '✅ שלח בקשה'
+                    }
+                  </button>
+                </>
               )}
 
-              {selectedCouple ? (
-                <button
-                  className={`btn ${isRegistered ? 'btn-cancel' : isFull ? 'btn-full' : 'btn-join'}`}
-                  onClick={() => handleRegister(event.id)}
-                  disabled={isFull && !isRegistered}
-                >
-                  {isRegistered ? '❌ ביטול' : isFull ? 'מלא' : '✅ אני בא!'}
-                </button>
-              ) : (
-                <p className="hint">בחר/י שם למעלה כדי להירשם</p>
+              {!isAdmin && isBlocked && (
+                <p className="blocked-message">🚫 השבת הזאת לא פנויה לאירוח</p>
               )}
             </div>
           )
