@@ -23,8 +23,39 @@ const COUPLE_COLORS = {
   'אבא':         '#4f46e5',
 }
 
-const MAX_COUPLES  = 2
-const MONTHS_AHEAD = 8
+const MAX_COUPLES   = 2
+const MONTHS_AHEAD  = 8
+const VAPID_PUBLIC  = 'BOO3Ncsifu38ofjC-lbqKn86Vdi1Iq3sY7LV5zCcnQyh_RgfZfC_joTDRUZYkTyPkiyy2A0oN-YNRDchFCf4gq8'
+
+// ── Push helpers ───────────────────────────────────────────
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4)
+  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw     = atob(base64)
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)))
+}
+
+async function subscribePush(coupleName, role) {
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js')
+    await navigator.serviceWorker.ready
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') return
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+    })
+
+    await supabase.from('push_subscriptions').upsert({
+      couple_name:  coupleName,
+      role:         role,
+      subscription: sub.toJSON(),
+    }, { onConflict: 'couple_name' })
+  } catch (e) {
+    console.warn('Push subscription failed:', e)
+  }
+}
 
 // ── Avatar ─────────────────────────────────────────────────
 function Avatar({ name, photo, size = 36 }) {
@@ -271,6 +302,10 @@ export default function App() {
   function handleLogin(user) {
     setCurrentUser(user)
     localStorage.setItem('currentUser', JSON.stringify(user))
+    // Subscribe to push (admin gets alerts, couples can too)
+    if ('Notification' in window && 'serviceWorker' in navigator) {
+      subscribePush(user.couple_name, user.role)
+    }
   }
 
   function handleLogout() {
