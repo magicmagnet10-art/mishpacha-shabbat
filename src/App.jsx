@@ -25,11 +25,35 @@ const COUPLE_COLORS = {
 
 const MAX_COUPLES  = 2
 const MONTHS_AHEAD = 8
+const VAPID_PUBLIC = 'BOO3Ncsifu38ofjC-lbqKn86Vdi1Iq3sY7LV5zCcnQyh_RgfZfC_joTDRUZYkTyPkiyy2A0oN-YNRDchFCf4gq8'
 
-// ── Notification helper ────────────────────────────────────
+// ── Push subscription ──────────────────────────────────────
+function urlBase64ToUint8Array(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4)
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'))
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)))
+}
+
+async function registerPush(coupleName, role) {
+  try {
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') return
+    const reg = await navigator.serviceWorker.ready
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+    })
+    await supabase.from('push_subscriptions').upsert(
+      { couple_name: coupleName, role, subscription: sub.toJSON() },
+      { onConflict: 'couple_name' }
+    )
+  } catch (e) { console.warn('Push:', e) }
+}
+
+// ── Fallback in-app notification ───────────────────────────
 function showNotification(title, body) {
   if (Notification.permission === 'granted') {
-    new Notification(title, { body, dir: 'rtl', lang: 'he', icon: '/favicon.svg' })
+    new Notification(title, { body, dir: 'rtl', lang: 'he', icon: '/icon.svg' })
   }
 }
 
@@ -278,8 +302,8 @@ export default function App() {
   function handleLogin(user) {
     setCurrentUser(user)
     localStorage.setItem('currentUser', JSON.stringify(user))
-    if (user.role === 'admin' && 'Notification' in window) {
-      Notification.requestPermission()
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      registerPush(user.couple_name, user.role)
     }
   }
 
