@@ -391,9 +391,17 @@ export default function App() {
       const approvedCount = current.filter(r => r.status === 'approved').length
       if (approvedCount >= MAX_COUPLES) return
       const note = notes[eventId] || ''
-      await supabase.from('registrations')
+      const { error } = await supabase.from('registrations')
         .insert({ event_id: eventId, couple_name: currentUser.couple_name, note: note || null, status: 'pending' })
-      setNotes(prev => ({ ...prev, [eventId]: '' }))
+      if (!error) {
+        setNotes(prev => ({ ...prev, [eventId]: '' }))
+        // שלח התראה לאבא דרך השרת
+        fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ record: { couple_name: currentUser.couple_name, event_id: eventId } }),
+        }).catch(() => {})
+      }
     }
   }
 
